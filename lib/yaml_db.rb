@@ -23,7 +23,11 @@ module YamlDb
 
   module Utils
     def self.chunk_records(records)
-      yaml = [ records ].to_yaml
+      cache_records = Hash.new
+      [ records ].each do |rec|
+        cache_records[:records] = rec.rows
+      end
+      yaml = [ cache_records[:records] ].to_yaml
       yaml.sub!(/---\s\n|---\n/, '')
       yaml.sub!('- - -', '  - -')
       yaml
@@ -57,19 +61,19 @@ module YamlDb
 
   class Load < SerializationHelper::Load
     def self.load_documents(io, truncate = true)
-        YAML.load_documents(io) do |ydoc|
-          ydoc.keys.each do |table_name|
-            next if ydoc[table_name].nil?
-            load_table(table_name, ydoc[table_name], truncate)
-          end
+      YAML.load_documents(io) do |ydoc|
+        ydoc.keys.each do |table_name|
+          next if ydoc[table_name].nil?
+          load_table(table_name, ydoc[table_name], truncate)
         end
+      end
     end
   end
 
   class Railtie < Rails::Railtie
     rake_tasks do
       load File.expand_path('../tasks/yaml_db_tasks.rake',
-__FILE__)
+                            __FILE__)
     end
   end
 
